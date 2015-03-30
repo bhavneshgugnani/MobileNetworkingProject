@@ -1,6 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MobileNetworkingProject</string>
 
+    <string name="app_name">MobileNetworkingProject</string>
     <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="settings">Settings</string>
+    <string name="title_scanner_frequency_settings">ScannerFrequencySettings</string>
+    <string name="title_interval_scanning_settings">IntervalScanningSettings</string>
+
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="scanner_frequency_settings">Scanner Frequency Settings</string>
+    <string name="interval_setting">Interval Settings</string>
+    <string name="Interval_in_min">Interval (in Min.)</string>
+    <string name="new_interval_value_saved">New Interval Value Saved</string>
+    <string name="new_scanner_frequency_setting_saved">New Scanner Frequency Setting Saved</string>
+
+
+    <string name="continuousscanning">Continuous Scanning</string>
+    <string name="intervalscanning">Interval Scanning</string>
+    <string name="manualscanning">Manual Scanning</string>
+
+    <!-- <string-array name="scanner_frequency_settings_options">
+        <item>Continuous Scanning</item>
+        <item>Interval Scanning</item>
+        <item>Manual Scanning</item>
+    </string-array> -->
+
 </resources>
