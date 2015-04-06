@@ -1,0 +1,13 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="networking.mobile.mobilenetworkingproject.file.EditFileActivity">
+
+    <item android:id="@+id/save_changes_to_file"
+        android:orderInCategory="100"
+        android:title="@string/save_changes">
+    </item>
+    <item android:id="@+id/cancel_changes_to_file"
+        android:orderInCategory="100"
+        android:title="@string/cancel">
+    </item>
+</menu>

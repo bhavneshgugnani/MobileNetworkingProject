@@ -10,11 +10,12 @@ public class ApplicationState {
     public static String MANUAL_SCANNING_SETTING;
 
     public static String defaultScanningFrequencySetting = "Continuous Scanning";
-    public static int defaultInterval = 60;
+    public static int defaultInterval = 15;
 
     public static String scanningFrequencySetting =  null;
-    public static boolean hasScanningFrequencySettingsChanged = false;
-
     public static int interval;
+
+    //only for finla commit to memory in case changed
+    public static boolean hasScanningFrequencySettingsChanged = false;
     public static boolean hasIntervalChanged;
 }
