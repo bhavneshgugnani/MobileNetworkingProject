@@ -21,7 +21,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".file.EditFileActivity"
+            android:label="@string/title_activity_edit_file_activity" >
+        </activity>
 
+        <receiver
+            android:name=".broadcastreceivers.IntervalScanningBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true" >
+        </receiver>
     </application>
 
 </manifest>
