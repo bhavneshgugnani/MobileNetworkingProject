@@ -18,6 +18,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import networking.mobile.mobilenetworkingproject.broadcastreceivers.IntervalScanningBroadcastReceiver;
+import networking.mobile.mobilenetworkingproject.controller.DataSyncController;
 import networking.mobile.mobilenetworkingproject.file.EditFileActivity;
 import networking.mobile.mobilenetworkingproject.state.ApplicationState;
 
@@ -39,7 +40,7 @@ public class MainActivity extends ActionBarActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int DISCOVERABILITY_TIME = 0;//Always discoverable
     private static final int MANUAL_SCAN_MENU_ITEM_INDEX = 0;
-    private static final int ONE_MINUTE_IN_MILLISECOND = 1000;
+    private static final int ONE_MINUTE_IN_MILLISECOND = 60000;
 
 
     @Override

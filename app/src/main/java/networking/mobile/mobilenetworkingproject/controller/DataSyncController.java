@@ -1,4 +1,4 @@
-package networking.mobile.mobilenetworkingproject;
+package networking.mobile.mobilenetworkingproject.controller;
 
 import networking.mobile.mobilenetworkingproject.state.ApplicationState;
 
