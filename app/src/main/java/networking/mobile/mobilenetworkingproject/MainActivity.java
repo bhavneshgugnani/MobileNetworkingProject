@@ -4,22 +4,32 @@ import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Handler;
+import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
+import networking.mobile.mobilenetworkingproject.backup.ViewBackupActivity;
 import networking.mobile.mobilenetworkingproject.broadcastreceivers.IntervalScanningBroadcastReceiver;
+import networking.mobile.mobilenetworkingproject.constant.Constants;
 import networking.mobile.mobilenetworkingproject.controller.DataSyncController;
 import networking.mobile.mobilenetworkingproject.file.EditFileActivity;
+import networking.mobile.mobilenetworkingproject.service.ApplicationService;
 import networking.mobile.mobilenetworkingproject.state.ApplicationState;
 
 public class MainActivity extends ActionBarActivity {
@@ -27,45 +37,75 @@ public class MainActivity extends ActionBarActivity {
     private static SharedPreferences sharedPreferences = null;
 
     private static final int SCANNER_FREQUENCY_SETINGS_REQUST_CODE = 100;
+    private static final int START_DEVICE_BLUETOOTH_DISCOVERABILITY = 800;
     private static final String SCANNING_FREQUENCY_PREFERENCE = "scanningfrequencypreference";
     private static final String INTERVAL_PREFERENCE = "intervalpreference";
+    private static final String BLUETOOTH_PREFERENCE = "bluetoothpreference";
+    private static final String PENDING_SYNC_TO_NETWORK = "pendingsynctonetwork";
 
     private static final int EDIT_FILE_REQUEST_CODE = 500;
 
-    private static BluetoothAdapter mBluetoothAdapter = null;
+    private BluetoothAdapter mBluetoothAdapter = null;
     private DataSyncController syncController = null;
     private AlarmManager aManager = null;
-    private static final String ADJUST_SCANNING = "mobilenetworking.adjustscanning";
+    private Handler handler = null;
+
+    public static final String ADJUST_SCANNING = "mobilenetworking.adjustscanning";
 
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int DISCOVERABILITY_TIME = 0;//Always discoverable
     private static final int MANUAL_SCAN_MENU_ITEM_INDEX = 0;
     private static final int ONE_MINUTE_IN_MILLISECOND = 60000;
 
+    private IntervalScanningBroadcastReceiver iReceiver = null;
+    private IntentFilter iFilter = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        syncController = new DataSyncController();
-        aManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
         //load settings from shared preferences
         loadSettingsFromSharedPreferences();
 
-        //register broadcast receiver for interval scanning
-        IntervalScanningBroadcastReceiver iReceiver = new IntervalScanningBroadcastReceiver(syncController);
-        registerReceiver(iReceiver, new IntentFilter(ADJUST_SCANNING));
+        mBluetoothAdapter = getBluetoothAdapter();
+        createHandler();
+        syncController = new DataSyncController(mBluetoothAdapter, getApplication(), handler);
+        aManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
-        //adjust scanning with new settings
-        adjustScanningWithNewSettings();
+        //set default syn state
+        setPendingSyncState(ApplicationState.pendingDataSyncedToNetwork);
+
+        //register broadcast receiver for interval scanning
+        iReceiver = new IntervalScanningBroadcastReceiver(syncController);
+        iFilter = new IntentFilter(ADJUST_SCANNING);
 
         //enable bluetooth
         enableBluetoothAndDiscoverability();
 
-        //perform pending sync if any
-        syncController.clearAnyPendingSyncToNetwork();
+        //listen in onActivityResult before starting any bluetooth actions
 
+        //start backend service
+        //Intent intent = new Intent(this, ApplicationService.class);
+        //intent.putExtra("", "");
+        //startService(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(iReceiver, iFilter);
+        syncController.start();
+
+        //perform pending sync if any
+        //syncController.clearAnyPendingSyncToNetwork();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(iReceiver);
+        syncController.stop();
     }
 
     @Override
@@ -99,43 +139,71 @@ public class MainActivity extends ActionBarActivity {
             openScannerFrequencySettingsDialog();
         } else if (id == R.id.title_interval_scanning_settings) {
             openIntervalScanningSettingsDialog();
+        } else if(id == R.id.title_bluetooth_settings){
+            openBluetoothSettingsDialog();
+        } else if (id == R.id.view_network_backup_data) {
+            viewBackupDataFiles();
+        } else if (id == R.id.exit_app) {
+            finish();
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    private BluetoothAdapter getBluetoothAdapter(){
+        if(ApplicationState.bluetoothSetting == ApplicationState.BLUETOOTH)
+            return BluetoothAdapter.getDefaultAdapter();//bluetooth adapter
+        else {
+            //bluetooth_ble adapter
+            if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE))
+                return null;
+            final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+            return bluetoothManager.getAdapter();
+        }
+    }
+
     private void enableBluetoothAndDiscoverability() {
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
         if (mBluetoothAdapter != null) {
             //enable bluetooth
-            if (!mBluetoothAdapter.isEnabled()) {
+            /*if (!mBluetoothAdapter.isEnabled()) {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 //result received in onActivityResult()
                 //Instead of enabling bluetooth, we can enable discoverability : http://developer.android.com/guide/topics/connectivity/bluetooth.html#EnablingDiscoverability
-            }
+            }*/
+            //enable discoverability of device, also enables bluetooth in device
+            enableDiscoverability();
         } else {
             //Bluetooth not supported
             openBluetoothNotSupportedDialog();
         }
-        enableDiscoverability();
+
     }
 
     private void enableDiscoverability() {
-        Intent discoverableIntent = new
-                Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, DISCOVERABILITY_TIME);
-        startActivity(discoverableIntent);
+        startActivityForResult(discoverableIntent, START_DEVICE_BLUETOOTH_DISCOVERABILITY);
     }
 
     private void loadSettingsFromSharedPreferences() {
-        sharedPreferences = getPreferences(MODE_PRIVATE);
-        ApplicationState.scanningFrequencySetting = sharedPreferences.getString(SCANNING_FREQUENCY_PREFERENCE, ApplicationState.defaultScanningFrequencySetting);
-        ApplicationState.interval = sharedPreferences.getInt(INTERVAL_PREFERENCE, ApplicationState.defaultInterval);
-
         ApplicationState.CONTINUOUS_SCANNING_SETTING = getResources().getString(R.string.continuousscanning);
         ApplicationState.INTERVAL_SCANNING_SETTING = getResources().getString(R.string.intervalscanning);
         ApplicationState.MANUAL_SCANNING_SETTING = getResources().getString(R.string.manualscanning);
+        ApplicationState.BLUETOOTH = getResources().getString(R.string.bluetooth);
+        ApplicationState.BLUETOOTH_BLE = getResources().getString(R.string.bluetooth_ble);
+
+        sharedPreferences = getPreferences(MODE_PRIVATE);
+        //sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        ApplicationState.scanningFrequencySetting = sharedPreferences.getString(SCANNING_FREQUENCY_PREFERENCE, ApplicationState.defaultScanningFrequencySetting);
+        ApplicationState.interval = sharedPreferences.getInt(INTERVAL_PREFERENCE, ApplicationState.defaultInterval);
+        ApplicationState.bluetoothSetting = sharedPreferences.getString(BLUETOOTH_PREFERENCE, ApplicationState.defaultBluetoothSetting);
+
+        ApplicationState.pendingDataSyncedToNetwork = sharedPreferences.getBoolean(PENDING_SYNC_TO_NETWORK, Constants.DEFAULT_PENDING_SYNC_TO_NETWORK);
+
+        //ApplicationState.scanningFrequencySetting = ApplicationState.defaultScanningFrequencySetting;
+        //ApplicationState.interval = ApplicationState.defaultInterval;
     }
 
     private void adjustScanningWithNewSettings() {
@@ -230,12 +298,87 @@ public class MainActivity extends ActionBarActivity {
         builder.show();
     }
 
+    private void openBluetoothSettingsDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        final String[] bluetoothSettings = {ApplicationState.BLUETOOTH, ApplicationState.BLUETOOTH_BLE};
+        builder.setTitle(R.string.bluetooth_settings)
+                .setItems(bluetoothSettings, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        String selected = null;
+                        if (bluetoothSettings[which].equalsIgnoreCase(ApplicationState.BLUETOOTH)) {
+                            // Regular Bluetooth selected
+                            if (!ApplicationState.bluetoothSetting.equalsIgnoreCase(ApplicationState.BLUETOOTH)) {
+                                selected = ApplicationState.BLUETOOTH;
+                            }
+                        } else if (bluetoothSettings[which].equalsIgnoreCase(ApplicationState.BLUETOOTH_BLE)) {
+                            // Bluetooth BLE selected
+                            if (!ApplicationState.bluetoothSetting.equalsIgnoreCase(ApplicationState.BLUETOOTH_BLE)) {
+                                selected = ApplicationState.BLUETOOTH_BLE;
+                            }
+                        }
+                        if (selected != null) {
+                            if (bluetoothSelectedSettingSupported(selected)) {
+                                CharSequence text = getResources().getString(R.string.new_bluetooth_setting_saved);
+                                Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+                                //adjust bluetooth settings
+                                adjustBluetoothSettings();
+                            } else {
+                                openBluetoothSelectedSettingNotSupportedDialog();
+                            }
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User cancelled the dialog
+                    }
+                });
+        // Create the AlertDialog object and return it
+        builder.create();
+        builder.show();
+    }
+
+    private void adjustBluetoothSettings(){
+        if(mBluetoothAdapter.isEnabled())
+            mBluetoothAdapter.disable();
+        enableBluetoothAndDiscoverability();
+    }
+
+    private boolean bluetoothSelectedSettingSupported(String selected){
+        boolean result = false;
+        if(selected == ApplicationState.BLUETOOTH){
+            if(BluetoothAdapter.getDefaultAdapter() == null)
+                result = false;
+            else
+                result = true;
+        } else if(selected == ApplicationState.BLUETOOTH_BLE){
+            if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE))
+                result = true;
+            else
+                result = false;
+        }
+        return result;
+    }
+
     private void openBluetoothNotSupportedDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle(R.string.title_bluetooth_not_supported).setMessage(R.string.message_bluetooth_not_supported)
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         finish();
+                    }
+                });
+        // Create the AlertDialog object and return it
+        builder.create();
+        builder.show();
+    }
+
+    private void openBluetoothSelectedSettingNotSupportedDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle(R.string.title_bluetooth_not_supported).setMessage(R.string.message_selected_bluetooth_not_supported)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        //Do not save settings
                     }
                 });
         // Create the AlertDialog object and return it
@@ -252,9 +395,19 @@ public class MainActivity extends ActionBarActivity {
         } else if (requestCode == EDIT_FILE_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 //synchronise changes to file in network
-                synchroniseChangesToNetwork();
+                setPendingSyncState(ApplicationState.pendingDataSyncedToNetwork);
+                //synchroniseChangesToNetwork();
             } else if (resultCode == RESULT_CANCELED) {
                 //no changes to file
+            }
+        } else if (requestCode == START_DEVICE_BLUETOOTH_DISCOVERABILITY) {
+            //bluetooth discoverability enabled
+            if (resultCode == DISCOVERABILITY_TIME + 1) {//android returns 1 when it should return 0
+                //adjust scanning with new settings
+                adjustScanningWithNewSettings();
+            } else if (resultCode == RESULT_CANCELED) {
+                //bluetooth discoverabiltiy diabled, exit app
+                finish();
             }
         }
     }
@@ -267,17 +420,24 @@ public class MainActivity extends ActionBarActivity {
 
             if (ApplicationState.hasScanningFrequencySettingsChanged)
                 editor.putString(SCANNING_FREQUENCY_PREFERENCE, ApplicationState.scanningFrequencySetting);
+            if (ApplicationState.hasbluetoothSettingsChanged)
+                editor.putString(BLUETOOTH_PREFERENCE, ApplicationState.bluetoothSetting);
             if (ApplicationState.hasIntervalChanged)
                 editor.putInt(INTERVAL_PREFERENCE, ApplicationState.interval);
+            editor.putBoolean(PENDING_SYNC_TO_NETWORK, ApplicationState.pendingDataSyncedToNetwork);
 
             // Commit to storage
             editor.commit();
-
-            //disable bluetooth
-            if (mBluetoothAdapter.isEnabled()) {
-                mBluetoothAdapter.disable();
-            }
         }
+
+        syncController.destroy();
+
+        //disable bluetooth
+        if (mBluetoothAdapter.isEnabled()) {
+            mBluetoothAdapter.disable();
+        }
+        //disable visibility
+
 
         super.onDestroy();
     }
@@ -288,7 +448,59 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void synchroniseChangesToNetwork() {
-        syncController.syncDataToNetwork();
+        syncController.clearAnyPendingSyncToNetwork();
     }
 
+    private void viewBackupDataFiles() {
+        Intent intent = new Intent(this, ViewBackupActivity.class);
+        startActivity(intent);
+    }
+
+    public void createHandler() {
+        this.handler = new Handler() {
+            public void handleMessage(Message msg) {
+                String message = msg.getData().getString(Constants.HANDLER_MSG).trim();
+                if (message != null && message != "") {
+                    CharSequence text = message;
+                    Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+                }
+
+                if (Boolean.parseBoolean(msg.getData().getString(Constants.HANDLER_MSG_KEY).trim())) {//updates synced to network
+                    // reset flag for data sync to network.
+                    if (ApplicationState.pendingDataSyncedToNetwork) {
+                        ApplicationState.pendingDataSyncedToNetwork = false;
+                        CharSequence text = "All data Synced to Network";
+                        Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+                        setPendingSyncState(ApplicationState.pendingDataSyncedToNetwork);
+                    }
+                }
+            }
+        };
+    }
+
+    public void syncDataToNetwork(View view) {
+        //sync data to network
+        //Toast.makeText(getApplicationContext(), "Syncing data to network, Please wait...", Toast.LENGTH_SHORT).show();
+        synchroniseChangesToNetwork();
+    }
+
+    private void setPendingSyncState(boolean pendingSyncState) {
+        Button view = (Button) findViewById(R.id.sync_button);
+        if (pendingSyncState)
+            enableSyncButton();
+        else
+            disableSyncButton();
+    }
+
+    private void enableSyncButton() {
+        Button view = (Button) findViewById(R.id.sync_button);
+        view.setEnabled(true);
+        view.setText(getString(R.string.sync_data));
+    }
+
+    private void disableSyncButton() {
+        Button view = (Button) findViewById(R.id.sync_button);
+        view.setEnabled(false);
+        view.setText(getString(R.string.data_synced));
+    }
 }

@@ -9,13 +9,21 @@ public class ApplicationState {
     public static String INTERVAL_SCANNING_SETTING;
     public static String MANUAL_SCANNING_SETTING;
 
-    public static String defaultScanningFrequencySetting = "Continuous Scanning";
+    public static String BLUETOOTH;
+    public static String BLUETOOTH_BLE;
+
+    public static String defaultScanningFrequencySetting = "Manual Scanning";
     public static int defaultInterval = 15;
+    public static String defaultBluetoothSetting = "Bluetooth";
 
-    public static String scanningFrequencySetting =  null;
+    public static String scanningFrequencySetting = null;
     public static int interval;
+    public static String bluetoothSetting = null;
 
-    //only for finla commit to memory in case changed
+    //only for final commit to memory in case changed
     public static boolean hasScanningFrequencySettingsChanged = false;
-    public static boolean hasIntervalChanged;
+    public static boolean hasIntervalChanged = false;
+    public static boolean hasbluetoothSettingsChanged = false;
+
+    public static boolean pendingDataSyncedToNetwork;
 }

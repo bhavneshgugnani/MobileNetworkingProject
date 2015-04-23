@@ -11,6 +11,7 @@ import android.widget.Toast;
 import java.io.IOException;
 
 import networking.mobile.mobilenetworkingproject.R;
+import networking.mobile.mobilenetworkingproject.state.ApplicationState;
 
 public class EditFileActivity extends ActionBarActivity {
 
@@ -23,13 +24,12 @@ public class EditFileActivity extends ActionBarActivity {
         String fileText = "";
         try {
             fileText += FileReaderWriter.readFileFromMemory(getApplicationContext(), openFileInput(FileReaderWriter.STORAGE_FILENAME));
-        } catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         editText.setText(fileText);
 
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -48,23 +48,24 @@ public class EditFileActivity extends ActionBarActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.save_changes_to_file) {
             saveChangesToFile();
-        } else if(id == R.id.cancel_changes_to_file){
+        } else if (id == R.id.cancel_changes_to_file) {
             setResult(RESULT_CANCELED);
             finish();
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void saveChangesToFile(){
+    private void saveChangesToFile() {
         EditText editText = (EditText) findViewById(R.id.file_text);
         String newText = editText.getText().toString();
         try {
             FileReaderWriter.writeFileToMemory(getApplicationContext(), openFileOutput(FileReaderWriter.STORAGE_FILENAME, Context.MODE_PRIVATE), newText);
-        } catch(IOException e){
+            ApplicationState.pendingDataSyncedToNetwork = true;
+        } catch (IOException e) {
             e.printStackTrace();
             CharSequence message = "Failure!Could not write text to file";
             Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
-        }finally {
+        } finally {
             setResult(RESULT_OK);
             finish();
         }

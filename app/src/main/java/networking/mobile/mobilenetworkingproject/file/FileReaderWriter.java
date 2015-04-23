@@ -19,7 +19,7 @@ public class FileReaderWriter {
         String angelListData = "";
         File file = new File(context.getFilesDir(), STORAGE_FILENAME);
         try {
-            if (!file.exists()){
+            if (!file.exists()) {
                 CharSequence message = "File does not exists";
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show();
             }
@@ -43,6 +43,7 @@ public class FileReaderWriter {
                 file.createNewFile();
             OutputStreamWriter outputWriter = new OutputStreamWriter(outputStream);
             outputWriter.write(text);
+            outputStream.flush();
             outputWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
