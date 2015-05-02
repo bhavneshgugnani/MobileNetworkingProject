@@ -7,7 +7,9 @@
     <!-- app to initiate device discovery or manipulate Bluetooth settings -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <!-- BLE support -->
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -48,6 +50,11 @@
             android:name=".backup.ViewBackupFileDataActivity"
             android:label="@string/title_activity_view_backup_file_data" >
         </activity>
+
+        <service
+            android:name=".service.SyncingService"
+            android:exported="false" >
+        </service>
     </application>
 
 </manifest>

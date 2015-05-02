@@ -25,8 +25,12 @@
     <string name="ok">Ok</string>
     <string name="title_manual_sync">Manual Sync!</string>
     <string name="view_network_backup_data">View Backup</string>
+    <string name="join_network">Join Network!</string>
+    <string name="leave_network">Leave Network!</string>
     <string name="no_backup_files_found">No Backed up data found</string>
     <string name="title_delete_backup">Delete Backup</string>
+    <string name="bluetooth_permission_denied">Cannot start Syncing, bluetooth not enabled!</string>
+    <string name="join_network_msg">Join Network to Sync Data</string>
     <string name="exit_app">Exit</string>
     <string name="continuousscanning">Continuous Scanning</string>
     <string name="intervalscanning">Interval Scanning</string>

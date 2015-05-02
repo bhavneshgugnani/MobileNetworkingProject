@@ -12,18 +12,18 @@ public class ApplicationState {
     public static String BLUETOOTH;
     public static String BLUETOOTH_BLE;
 
-    public static String defaultScanningFrequencySetting = "Manual Scanning";
-    public static int defaultInterval = 15;
-    public static String defaultBluetoothSetting = "Bluetooth";
+    public static final String defaultScanningFrequencySetting = "Manual Scanning";
+    public static final int defaultInterval = 15;
+    public static final String defaultBluetoothSetting = "Bluetooth";
+    public static final boolean defaultPendingSyncToNetwork = false;
+    public static final boolean defaultJoinedNetwork = false;
 
     public static String scanningFrequencySetting = null;
     public static int interval;
     public static String bluetoothSetting = null;
+    public static boolean pendingDataSyncedToNetwork = false;
+    public static boolean joinedNetwork = false;
 
-    //only for final commit to memory in case changed
-    public static boolean hasScanningFrequencySettingsChanged = false;
-    public static boolean hasIntervalChanged = false;
-    public static boolean hasbluetoothSettingsChanged = false;
-
-    public static boolean pendingDataSyncedToNetwork;
+    //only for final commit of settings to memory in case changed
+    public static boolean hasSettingsChanged = false;
 }

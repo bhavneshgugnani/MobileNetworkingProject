@@ -27,7 +27,7 @@ public class BluetoothBleService implements Service {
     private Context context;
     //private BluetoothAdapter.LeScanCallback mLeScanCallback = null;
 
-    public BluetoothBleService(BluetoothAdapter mBluetoothAdapter, Context context) {
+    public BluetoothBleService(BluetoothAdapter mBluetoothAdapter, Context context, Handler handler) {
         this.mBluetoothAdapter = mBluetoothAdapter;
         this.context = context;
         // Device scan callback.

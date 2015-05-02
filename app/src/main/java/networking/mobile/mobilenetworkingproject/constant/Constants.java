@@ -20,4 +20,6 @@ public class Constants {
     public static final String HANDLER_MSG_KEY = "handler_message_key";
 
     public static final boolean DEFAULT_PENDING_SYNC_TO_NETWORK = false;
+
+    public static final int ONE_MINUTE_IN_MILLISECOND = 60000;
 }

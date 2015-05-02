@@ -13,7 +13,9 @@ import android.widget.Toast;
 
 import java.util.Set;
 
+import networking.mobile.mobilenetworkingproject.bluetooth.BluetoothBleService;
 import networking.mobile.mobilenetworkingproject.bluetooth.BluetoothService;
+import networking.mobile.mobilenetworkingproject.bluetooth.abstractservice.Service;
 import networking.mobile.mobilenetworkingproject.constant.Constants;
 import networking.mobile.mobilenetworkingproject.file.FileReaderWriter;
 import networking.mobile.mobilenetworkingproject.state.ApplicationState;
@@ -23,20 +25,24 @@ import networking.mobile.mobilenetworkingproject.state.ApplicationState;
  */
 public class DataSyncController {
     private BluetoothAdapter mBluetoothAdapter = null;
-    private BluetoothService bluetoothService = null;
+    private Service bluetoothService = null;
     private Context context = null;
-    private BroadcastReceiver mReceiver = null;
     private Handler handler = null;
 
     public DataSyncController(BluetoothAdapter mBluetoothAdapter, Context context, Handler handler) {
         this.mBluetoothAdapter = mBluetoothAdapter;
         this.context = context;
         this.handler = handler;
-        this.bluetoothService = new BluetoothService(mBluetoothAdapter, context, handler);
+        if(ApplicationState.bluetoothSetting.equalsIgnoreCase(ApplicationState.BLUETOOTH))
+            this.bluetoothService = new BluetoothService(mBluetoothAdapter, context, handler);
+        else if(ApplicationState.bluetoothSetting.equalsIgnoreCase(ApplicationState.BLUETOOTH_BLE))
+            this.bluetoothService = new BluetoothBleService(mBluetoothAdapter, context, handler);
     }
 
     public void start() {
         bluetoothService.start();
+        //perform pending sync if any
+        syncDataToNetwork();
     }
 
     public void stop() {
@@ -52,40 +58,12 @@ public class DataSyncController {
     }
 
     public void clearAnyPendingSyncToNetwork() {
-        if (ApplicationState.pendingDataSyncedToNetwork) {
+        if(ApplicationState.pendingDataSyncedToNetwork) {
             byte[] text = getPendingData().getBytes();
             //sync data with network
             bluetoothService.syncDataToNetwork(text);
-
-        } else {
-            CharSequence text = "All data already synced to network";
-            Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
         }
     }
-
-    /*private void discoverMoreDevices(final byte[] text) {
-        final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                // When discovery finds a device
-                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                    // Get the BluetoothDevice object from the Intent
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    CharSequence msg = "Device found : " + device.getName();
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
-                    // write to new devices
-                    bluetoothService.write(device, text);
-
-                }
-            }
-        };
-        // Register the BroadcastReceiver
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        context.registerReceiver(mReceiver, filter);
-        //start discovery
-        mBluetoothAdapter.startDiscovery();
-    }*/
 
     private String getPendingData() {
         String fileText = "";
@@ -96,12 +74,5 @@ public class DataSyncController {
         }
         return fileText.trim();
     }
-
-    public void destroy() {
-        if(mReceiver != null)
-            context.unregisterReceiver(mReceiver);
-        bluetoothService.stop();
-    }
-
 
 }
