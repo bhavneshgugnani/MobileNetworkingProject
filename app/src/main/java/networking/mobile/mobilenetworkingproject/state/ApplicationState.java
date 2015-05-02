@@ -8,7 +8,6 @@ public class ApplicationState {
     public static String CONTINUOUS_SCANNING_SETTING;
     public static String INTERVAL_SCANNING_SETTING;
     public static String MANUAL_SCANNING_SETTING;
-
     public static String BLUETOOTH;
     public static String BLUETOOTH_BLE;
 

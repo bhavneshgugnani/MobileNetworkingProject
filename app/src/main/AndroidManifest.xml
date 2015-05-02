@@ -31,7 +31,7 @@
         </activity>
 
         <receiver
-            android:name=".broadcastreceivers.IntervalScanningBroadcastReceiver"
+            android:name=".broadcastreceivers.ServiceBroadcastReceiver"
             android:enabled="true"
             android:exported="true" >
         </receiver>

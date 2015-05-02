@@ -1,12 +1,10 @@
 package networking.mobile.mobilenetworkingproject.service;
 
 import android.app.AlarmManager;
-import android.app.AlertDialog;
 import android.app.IntentService;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Context;
 import android.content.IntentFilter;
@@ -16,9 +14,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.widget.Toast;
 
-import networking.mobile.mobilenetworkingproject.MainActivity;
-import networking.mobile.mobilenetworkingproject.R;
-import networking.mobile.mobilenetworkingproject.broadcastreceivers.IntervalScanningBroadcastReceiver;
+import networking.mobile.mobilenetworkingproject.broadcastreceivers.ServiceBroadcastReceiver;
 import networking.mobile.mobilenetworkingproject.constant.Constants;
 import networking.mobile.mobilenetworkingproject.controller.DataSyncController;
 import networking.mobile.mobilenetworkingproject.state.ApplicationState;
@@ -35,15 +31,11 @@ public class SyncingService extends Service {
     private static final String INTERVAL_SETTING = "intervalsetting";
     private static final String BLUETOOTH_SETTING = "bluetoothsetting";
 
-    public static final String ADJUST_SCANNING = "mobilenetworking.adjustscanning";
-    private static final int DISCOVERABILITY_TIME = 0;//Always discoverable
-    private static final int START_DEVICE_BLUETOOTH_DISCOVERABILITY = 800;
-
     private BluetoothAdapter mBluetoothAdapter = null;
     private DataSyncController syncController = null;
     private AlarmManager aManager = null;
     private Handler handler = null;
-    private IntervalScanningBroadcastReceiver iReceiver = null;
+    private ServiceBroadcastReceiver iReceiver = null;
     private IntentFilter iFilter = null;
 
     public static void startService(Context context) {
@@ -71,8 +63,10 @@ public class SyncingService extends Service {
         aManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
         //register broadcast receiver for interval scanning
-        iReceiver = new IntervalScanningBroadcastReceiver(getApplicationContext(), syncController, aManager);
-        iFilter = new IntentFilter(ADJUST_SCANNING);
+        iReceiver = new ServiceBroadcastReceiver(getApplicationContext(), syncController, aManager);
+        iFilter = new IntentFilter();
+        iFilter.addAction(ServiceBroadcastReceiver.ADJUST_SCANNING_INTENT);
+        iFilter.addAction(ServiceBroadcastReceiver.MANUAL_UPDATE_INTENT);
         registerReceiver(iReceiver, iFilter);
 
         ApplicationState.joinedNetwork = true;
@@ -84,7 +78,7 @@ public class SyncingService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         syncController.start();
         Intent updateIntent = new Intent();
-        updateIntent.setAction(ApplicationState.scanningFrequencySetting);
+        updateIntent.setAction(ServiceBroadcastReceiver.ADJUST_SCANNING_INTENT);
         sendBroadcast(updateIntent);
 
         return super.onStartCommand(intent, flags, startId);
@@ -143,18 +137,5 @@ public class SyncingService extends Service {
                 }
             }
         };
-    }
-
-    private void openBluetoothNotSupportedDialog() {
-        /*AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle(R.string.title_bluetooth_not_supported).setMessage(R.string.message_bluetooth_not_supported)
-                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        SyncingService.stopService(getApplicationContext());
-                    }
-                });
-        // Create the AlertDialog object and return it
-        builder.create();
-        builder.show();*/
     }
 }

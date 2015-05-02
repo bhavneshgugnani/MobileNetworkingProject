@@ -1,22 +1,12 @@
 package networking.mobile.mobilenetworkingproject.controller;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Handler;
-import android.os.Message;
-import android.support.v4.app.FragmentActivity;
-import android.widget.Toast;
-
-import java.util.Set;
 
 import networking.mobile.mobilenetworkingproject.bluetooth.BluetoothBleService;
 import networking.mobile.mobilenetworkingproject.bluetooth.BluetoothService;
 import networking.mobile.mobilenetworkingproject.bluetooth.abstractservice.Service;
-import networking.mobile.mobilenetworkingproject.constant.Constants;
 import networking.mobile.mobilenetworkingproject.file.FileReaderWriter;
 import networking.mobile.mobilenetworkingproject.state.ApplicationState;
 
@@ -74,5 +64,4 @@ public class DataSyncController {
         }
         return fileText.trim();
     }
-
 }
